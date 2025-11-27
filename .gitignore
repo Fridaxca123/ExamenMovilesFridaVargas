@@ -1,0 +1,12 @@
+# Ignorar archivos del sistema de macOS
+.DS_Store
+
+# Ignorar carpeta FridaExamen completa
+FridaExamen/
+
+# Opcional: ignorar más archivos típicos de Xcode/Swift
+*.xcuserstate
+*.xcworkspace
+*.xcodeproj/*
+DerivedData/
+build/
