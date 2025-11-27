@@ -4,38 +4,52 @@
 //
 //  Created by Frida Xcaret Vargas Trejo on 26/11/25.
 //
-
 import Foundation
 
-//api route y rutas
 struct Api {
-    static let base = "https://restcountries.com/v3.1"
+    static let base = "https://api.api-ninjas.com/v1"
     
     struct routes {
-        static let allCountries = "/all"
+        static let sudoku = "/sudokugenerate"
     }
 }
 
-//protocolo de servicio
-protocol CountryAPIProtocol {
-    func getAllCountries() async -> [Country]?
+protocol SudokuAPIProtocol {
+    func generateSudoku() async -> SudokuResponse?
 }
-//protocolo del servicio de API
-//Esta clase es la que se conectará a nuestro Protocolo y a partir de ella se podrán cargar los datos hacia el ContentView
 
-class CountryRepository {
-    static let shared = CountryRepository()
+class SudokuRepository: SudokuAPIProtocol {
+    static let shared = SudokuRepository()
     let nservice: NetworkAPIService
     
     init(nservice: NetworkAPIService = .shared) {
         self.nservice = nservice
     }
     
-    func getCountries() async -> [Country]? {
-        let url = URL(string: "https://restcountries.com/v3.1/all?fields=name")!
-        return await nservice.fetchCountries(url: url)
+    func generateSudoku() async -> SudokuResponse? {
+        // Incluye un parámetro para que la API genere el puzzle correctamente
+        guard let url = URL(string: "\(Api.base)\(Api.routes.sudoku)?difficulty=easy") else { return nil }
+        return await nservice.fetchSudoku(url: url)
+    }
+
+    
+    // Convierte el puzzle en un tablero de SudokuCell para SwiftUI
+    func getSudoku() async -> [[SudokuCell]]? {
+        guard let response = await generateSudoku() else { return nil }
+        var board: [[SudokuCell]] = []
+        
+        for row in response.puzzle {
+            let rowCells = row.map { value in
+                SudokuCell(value: value ?? 0, isEditable: value == nil)
+            }
+            board.append(rowCells)
+        }
+        
+        return board
     }
 }
 
-
-
+struct SudokuCell {
+    var value: Int
+    var isEditable: Bool
+}

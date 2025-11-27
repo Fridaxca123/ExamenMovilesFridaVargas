@@ -6,35 +6,44 @@
 //
 import SwiftUI
 import Combine
+import SwiftUI
 
 @MainActor
-final class CountryViewModel: ObservableObject {
-    @Published var countryList: [Country] = []
-    @Published var searchText: String = ""       
+class SudokuViewModel: ObservableObject {
+    @Published var board: [[SudokuCell]] = Array(
+        repeating: Array(repeating: SudokuCell(value: 0, isEditable: true), count: 9),
+        count: 9
+    )
+    
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-
-    // Computed property que regresa los países filtrados
-    var filteredCountries: [Country] {
-        if searchText.isEmpty {
-            return countryList
-        } else {
-            return countryList.filter {
-                $0.name.common?.lowercased().contains(searchText.lowercased()) ?? false
-            }
-        }
+    
+    private let repository: SudokuRepository
+    
+    init(repository: SudokuRepository = .shared) {
+        self.repository = repository
     }
-
-    func loadCountries() async {
+    
+    // Función para cargar el Sudoku desde la API
+    func loadSudoku() async {
         isLoading = true
-        defer { isLoading = false }
-
-        if let result = await CountryRepository.shared.getCountries() {
-            self.countryList = result
+        errorMessage = nil
+        
+        if let newBoard = await repository.getSudoku() {
+            board = newBoard
         } else {
-            self.errorMessage = "No se pudieron cargar los países."
+            errorMessage = "No se pudo cargar el Sudoku"
         }
+        
+        isLoading = false
+    }
+    
+    // Función opcional para actualizar un valor de celda
+    func updateCell(row: Int, col: Int, value: Int) {
+        guard board.indices.contains(row),
+              board[row].indices.contains(col),
+              board[row][col].isEditable else { return }
+        
+        board[row][col].value = value
     }
 }
-
-
