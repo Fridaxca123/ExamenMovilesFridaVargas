@@ -4,14 +4,10 @@
 //
 //  Created by Frida Xcaret Vargas Trejo on 26/11/25.
 //
-
 import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = SudokuViewModel()
-    
-    // 9 columnas para Sudoku 9x9
-    let columns: [GridItem] = Array(repeating: GridItem(.flexible()), count: 9)
     
     var body: some View {
         NavigationView {
@@ -24,30 +20,27 @@ struct ContentView: View {
                         .foregroundColor(.red)
                         .padding()
                 } else {
-                    ScrollView {
-                        LazyVGrid(columns: columns, spacing: 2) {
-                            // Aplanamos el tablero en un array lineal con fila, columna y celda
-                            ForEach(Array(viewModel.board.enumerated()).flatMap { rowIndex, row in
-                                row.enumerated().map { colIndex, cell in
-                                    (rowIndex, colIndex, cell)
-                                }
-                            }, id: \.0) { row, col, cell in
-                                SudokuCellView(cell: cell)
-                                    .id("\(row)-\(col)") // ID único
-                                    .onTapGesture {
-                                        if cell.isEditable {
-                                            viewModel.updateCell(row: row, col: col, value: (cell.value + 1) % 10)
+                    VStack(spacing: 2) {
+                        ForEach(0..<viewModel.board.count, id: \.self) { row in
+                            HStack(spacing: 2) {
+                                ForEach(0..<viewModel.board[row].count, id: \.self) { col in
+                                    let cell = viewModel.board[row][col]
+                                    SudokuCellView(cell: cell)
+                                        .onTapGesture {
+                                            if cell.isEditable {
+                                                viewModel.updateCell(row: row, col: col, value: (cell.value + 1) % 10)
+                                            }
                                         }
-                                    }
+                                }
                             }
                         }
-                        .padding()
                     }
+                    .padding()
                 }
             }
             .navigationTitle("Sudoku")
             .task {
-                await viewModel.loadSudoku() // Carga solo puzzle
+                await viewModel.loadSudoku()
             }
         }
     }
@@ -70,3 +63,4 @@ struct SudokuCellView: View {
         }
     }
 }
+
