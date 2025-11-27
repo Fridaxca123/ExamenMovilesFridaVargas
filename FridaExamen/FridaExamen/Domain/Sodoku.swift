@@ -20,3 +20,10 @@ struct Sudoku {
         return true
     }
 }
+
+struct SavedSudoku: Codable {
+    let puzzle: [[Int?]]      // tablero base
+    let current: [[Int]]      // valores ingresados por el usuario
+    let size: Int
+    let difficulty: String
+}

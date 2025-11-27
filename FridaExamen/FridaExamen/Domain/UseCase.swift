@@ -29,3 +29,31 @@ class SudokuUseCase: SudokuUseCaseProtocol {
     }
 }
 
+class SudokuStorage {
+    private let key = "saved_sudoku"
+
+    func save(sudoku: Sudoku, current: [[Int]]) {
+        let saved = SavedSudoku(
+            puzzle: sudoku.puzzle,
+            current: current,
+            size: sudoku.puzzle.count,
+            difficulty: "easy" // o la que tengas en sudoku
+        )
+        if let data = try? JSONEncoder().encode(saved) {
+            UserDefaults.standard.set(data, forKey: key)
+        }
+    }
+
+    func load() -> SavedSudoku? {
+        guard let data = UserDefaults.standard.data(forKey: key),
+              let saved = try? JSONDecoder().decode(SavedSudoku.self, from: data) else {
+            return nil
+        }
+        return saved
+    }
+
+    func clear() {
+        UserDefaults.standard.removeObject(forKey: key)
+    }
+}
+
