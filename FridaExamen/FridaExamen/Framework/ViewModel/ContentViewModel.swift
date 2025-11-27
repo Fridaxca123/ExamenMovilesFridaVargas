@@ -36,6 +36,7 @@ class SudokuViewModel: ObservableObject {
         errorMessage = nil
         checkMessage = nil
 
+        // Primero intentamos cargar un puzzle guardado
         if let saved = storage.load() {
             size = saved.size
             difficulty = saved.difficulty
@@ -45,15 +46,26 @@ class SudokuViewModel: ObservableObject {
                     SudokuCell(value: value, isEditable: sudoku!.puzzle[r][c] == nil)
                 }
             }
-        } else if let sudokuLoaded = await useCase.loadSudoku(size: size, difficulty: difficulty) {
+            isLoading = false
+            return
+        }
+
+        // Si no hay puzzle guardado, intentamos cargar desde la API
+        do {
+            guard let sudokuLoaded = try await useCase.loadSudoku(size: size, difficulty: difficulty) else {
+                errorMessage = "No se pudo cargar el Sudoku"
+                isLoading = false
+                return
+            }
             sudoku = sudokuLoaded
             board = sudokuLoaded.puzzle.map { row in
                 row.map { value in
                     SudokuCell(value: value ?? 0, isEditable: value == nil)
                 }
             }
-        } else {
-            errorMessage = "No se pudo cargar el Sudoku"
+        } catch {
+            // Si hay error (offline o API fallida)
+            errorMessage = "❌ No hay conexión. Puedes seguir jugando con el puzzle guardado."
         }
 
         isLoading = false
@@ -74,12 +86,12 @@ class SudokuViewModel: ObservableObject {
     func saveGame() {
         guard let sudoku = sudoku else { return }
         storage.save(sudoku: sudoku, current: board.map { $0.map { $0.value } })
-        saveMessage = "✅ Partida guardada exitosamente"
+        saveMessage = "Partida guardada exitosamente"
     }
 
     func clearSavedGame() {
         storage.clear()
-        deleteMessage = "🗑 Partida borrada exitosamente"
+        deleteMessage = "Partida borrada exitosamente"
         Task { await loadSudoku() } // recarga un nuevo sudoku si quieres
     }
 }

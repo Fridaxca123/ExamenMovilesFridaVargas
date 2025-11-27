@@ -7,10 +7,10 @@
 import SwiftUI
 struct NewGameView: View {
     @StateObject private var viewModel = SudokuViewModel()
+    @State private var showingErrorAlert = false
 
     var body: some View {
         VStack {
-            // Selección tamaño y dificultad
             HStack {
                 Picker("Tamaño", selection: $viewModel.size) {
                     Text("4x4").tag(4)
@@ -28,7 +28,12 @@ struct NewGameView: View {
             .padding()
 
             Button("Cargar Sudoku") {
-                Task { await viewModel.loadSudoku() }
+                Task {
+                    await viewModel.loadSudoku()
+                    if viewModel.errorMessage != nil {
+                        showingErrorAlert = true
+                    }
+                }
             }
             .buttonStyle(.borderedProminent)
             .padding()
@@ -36,5 +41,10 @@ struct NewGameView: View {
             SudokuBoardView(viewModel: viewModel)
         }
         .navigationTitle("Nueva partida")
+        .alert("Error por falta de conexion", isPresented: $showingErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
     }
 }
