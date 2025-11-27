@@ -6,12 +6,36 @@
 //
 import SwiftUI
 
+import SwiftUI
+
 struct ContentView: View {
     @StateObject private var viewModel = SudokuViewModel()
-    
+
     var body: some View {
         NavigationView {
             VStack {
+                // Selección tamaño y dificultad
+                HStack {
+                    Picker("Tamaño", selection: $viewModel.size) {
+                        Text("4x4").tag(4)
+                        Text("9x9").tag(9)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+
+                    Picker("Dificultad", selection: $viewModel.difficulty) {
+                        Text("Easy").tag("easy")
+                        Text("Medium").tag("medium")
+                        Text("Hard").tag("hard")
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+                .padding()
+
+                Button("Cargar Sudoku") {
+                    Task { await viewModel.loadSudoku() }
+                }
+                .padding()
+
                 if viewModel.isLoading {
                     ProgressView("Cargando Sudoku...")
                         .padding()
@@ -20,27 +44,27 @@ struct ContentView: View {
                         .foregroundColor(.red)
                         .padding()
                 } else {
-                    VStack(spacing: 2) {
-                        ForEach(0..<viewModel.board.count, id: \.self) { row in
-                            HStack(spacing: 2) {
-                                ForEach(0..<viewModel.board[row].count, id: \.self) { col in
-                                    let cell = viewModel.board[row][col]
-                                    
-                                    SudokuCellView(cell: cell) { newValue in
-                                        viewModel.updateCell(row: row, col: col, value: newValue)
+                    ScrollView {
+                        VStack(spacing: 2) {
+                            ForEach(0..<viewModel.board.count, id: \.self) { row in
+                                HStack(spacing: 2) {
+                                    ForEach(0..<viewModel.board[row].count, id: \.self) { col in
+                                        let cell = viewModel.board[row][col]
+                                        SudokuCellView(cell: cell) { newValue in
+                                            viewModel.updateCell(row: row, col: col, value: newValue)
+                                        }
                                     }
                                 }
                             }
                         }
+                        .padding()
                     }
-                    .padding()
-                    
-                    // Botón para checar la solución
+
                     Button("Verificar Sudoku") {
                         viewModel.checkSolution()
                     }
                     .padding()
-                    
+
                     if let message = viewModel.checkMessage {
                         Text(message)
                             .foregroundColor(message.contains("correcto") ? .green : .red)
@@ -49,14 +73,9 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("Sudoku")
-            .task {
-                await viewModel.loadSudoku()
-            }
         }
     }
 }
-
-
 struct SudokuCellView: View {
     let cell: SudokuCell
     var onCommit: ((Int) -> Void)? = nil
