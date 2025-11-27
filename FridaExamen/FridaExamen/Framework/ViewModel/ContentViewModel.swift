@@ -15,14 +15,14 @@ class SudokuViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var checkMessage: String?
 
-    @Published var size: Int = 9        // 4 o 9
-    @Published var difficulty: String = "easy"  // easy, medium, hard
+    @Published var size: Int = 9
+    @Published var difficulty: String = "easy"
 
-    private let repository: SudokuRepository
-    private var solution: [[Int]] = []
+    private let useCase: SudokuUseCaseProtocol
+    private var sudoku: Sudoku?
 
-    init(repository: SudokuRepository = .shared) {
-        self.repository = repository
+    init(useCase: SudokuUseCaseProtocol = SudokuUseCase()) {
+        self.useCase = useCase
     }
 
     func loadSudoku() async {
@@ -30,10 +30,9 @@ class SudokuViewModel: ObservableObject {
         errorMessage = nil
         checkMessage = nil
 
-        if let response = await repository.generateSudoku(size: size, difficulty: difficulty) {
-            solution = response.solution
-
-            board = response.puzzle.map { row in
+        if let sudoku = await useCase.loadSudoku(size: size, difficulty: difficulty) {
+            self.sudoku = sudoku
+            board = sudoku.puzzle.map { row in
                 row.map { value in
                     SudokuCell(value: value ?? 0, isEditable: value == nil)
                 }
@@ -54,14 +53,7 @@ class SudokuViewModel: ObservableObject {
     }
 
     func checkSolution() {
-        for row in 0..<board.count {
-            for col in 0..<board[row].count {
-                if board[row][col].value != solution[row][col] {
-                    checkMessage = "❌ Sudoku incorrecto"
-                    return
-                }
-            }
-        }
-        checkMessage = "✅ Sudoku correcto"
+        guard let sudoku = sudoku else { return }
+        checkMessage = useCase.checkSudoku(sudoku: sudoku, current: board.map { $0.map { $0.value } }) ? "✅ Sudoku correcto" : "❌ Sudoku incorrecto"
     }
 }
